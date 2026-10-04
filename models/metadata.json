@@ -1,0 +1,105 @@
+{
+  "version": "03822fbf",
+  "timestamp": "2026-08-01T09:46:02.377175",
+  "feature_names": [
+    "packet_rate",
+    "byte_rate",
+    "flow_duration",
+    "protocol_enc",
+    "tcp_flags_enc",
+    "connection_errors",
+    "port_entropy",
+    "dst_port",
+    "is_known_iot_port",
+    "avg_packet_size",
+    "packet_byte_ratio",
+    "has_connection_errors"
+  ],
+  "label_mapping": {
+    "0": "BENIGN",
+    "1": "BruteForce",
+    "2": "DDoS",
+    "3": "PortScan"
+  },
+  "label_classes": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "training_metrics": {
+    "best_params": {
+      "max_depth": 20,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "n_estimators": 200
+    },
+    "cv_f1_macro_mean": 0.9994209383071692,
+    "cv_f1_macro_std": 0.0005609704110189918,
+    "cv_f1_macro_scores": [
+      0.9995864350703061,
+      1.0,
+      0.9995864339385514,
+      0.9995860924315905,
+      0.9983457300953975
+    ],
+    "anomaly_ap_score": 0.5395175071721896,
+    "anomaly_optimal_threshold": -0.06348932258236295,
+    "anomaly_best_f1": 0.5934065889500061
+  },
+  "evaluation_metrics": {
+    "random_forest": {
+      "accuracy": 0.996,
+      "classification_report": "              precision    recall  f1-score   support\n\n      BENIGN       1.00      1.00      1.00       756\n  BruteForce       1.00      1.00      1.00        50\n        DDoS       1.00      0.98      0.99       100\n    PortScan       0.98      1.00      0.99        94\n\n    accuracy                           1.00      1000\n   macro avg       0.99      0.99      0.99      1000\nweighted avg       1.00      1.00      1.00      1000\n"
+    },
+    "isolation_forest": {
+      "accuracy": 0.783,
+      "average_precision": 0.5395175071721896,
+      "optimal_threshold": -0.06348932258236295
+    }
+  },
+  "benchmark_results": {
+    "batch_size": 100,
+    "n_iterations": 10,
+    "random_forest": {
+      "avg_latency_ms": 51.55554499999653
+    },
+    "isolation_forest": {
+      "avg_latency_ms": 18.837282899994534
+    }
+  },
+  "protocol_mapping": {
+    "TCP": 0,
+    "UDP": 1,
+    "ICMP": 2,
+    "HTTP": 3,
+    "MQTT": 4,
+    "COAP": 5,
+    "MODBUS": 6
+  },
+  "flags_mapping": {
+    "S": 0,
+    "SA": 1,
+    "PA": 2,
+    "A": 3,
+    "R": 4,
+    "F": 5
+  },
+  "iot_ports": [
+    47808,
+    1883,
+    80,
+    5683,
+    5684,
+    8883,
+    502,
+    22,
+    443
+  ],
+  "config": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "if_contamination": 0.05,
+    "cv_folds": 5
+  }
+}

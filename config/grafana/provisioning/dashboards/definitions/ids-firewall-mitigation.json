@@ -1,0 +1,62 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {"type": "grafana", "uid": "-- Grafana --"},
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"showTime": true, "sortOrder": "Descending"},
+      "targets": [
+        {"expr": "{job=\"ids_system\", event_type=~\"mitigation_applied|firewall_rule_changed|block_ip\"}", "refId": "A"}
+      ],
+      "title": "Firewall and Mitigation Activity",
+      "type": "logs"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 2,
+      "targets": [
+        {"expr": "sum by (event_type) (count_over_time({job=\"ids_system\", event_type=~\"mitigation_applied|firewall_rule_changed|block_ip\"}[5m]))", "legendFormat": "{{event_type}}", "refId": "A"}
+      ],
+      "title": "Mitigation Events by Type",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "id": 3,
+      "targets": [
+        {"expr": "sum by (source_agent) (count_over_time({job=\"ids_system\", event_type=~\"mitigation_applied|firewall_rule_changed|block_ip\"}[5m]))", "legendFormat": "{{source_agent}}", "refId": "A"}
+      ],
+      "title": "Mitigation Events by Agent",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["ids", "loki", "firewall", "mitigation"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "IDS Firewall Mitigation",
+  "uid": "ids-firewall-mitigation",
+  "version": 1
+}

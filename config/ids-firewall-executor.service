@@ -1,0 +1,17 @@
+[Unit]
+Description=IoT IDS privileged nftables executor
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/mnt/d/Final_Project_MCA/autonomous_llm_multiagent_iot_ids_ips_repository
+Environment=FIREWALL_EXECUTOR_SOCKET=/run/ids/firewall.sock
+ExecStart=/usr/bin/python3 /mnt/d/Final_Project_MCA/autonomous_llm_multiagent_iot_ids_ips_repository/scripts/firewall_executor.py
+Restart=on-failure
+RuntimeDirectory=ids
+RuntimeDirectoryMode=0750
+
+[Install]
+WantedBy=multi-user.target

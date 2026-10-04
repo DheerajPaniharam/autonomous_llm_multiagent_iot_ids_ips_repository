@@ -1,0 +1,19 @@
+# Ollama Modelfile for Fine-Tuned Qwen2.5-3B IoT IDS/IPS Model
+FROM ./qwen2.5-3b-instruct.Q4_K_M.gguf
+
+# Deterministic greedy decoding for rapid & reproducible security actions
+PARAMETER temperature 0.0
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.1
+
+# Stop tokens to prevent hallucinations
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+PARAMETER stop "<|im_start|>"
+
+# System prompt matching the multi-agent orchestrator contract
+SYSTEM """You are a cybersecurity analyst for an IoT network IDS/IPS system.
+Analyze the network threat telemetry and return strictly valid JSON with keys: severity, vector, action, explanation."""
+
+

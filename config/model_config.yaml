@@ -1,0 +1,22 @@
+system:
+  detection_threshold: 0.7
+  anomaly_threshold: 0.6
+  composite_threshold: 0.65
+  whitelist_ips: []
+  blacklist_ips: []
+  enabled_attack_categories:
+    - ddos
+    - dos
+    - port_scan
+    - brute_force
+    - botnet
+    - malware
+    - unauthorized_access
+  log_retention_days: 90
+  privacy_mode: false
+  signature_updates_enabled: true
+  threat_intel_enabled: false
+  threat_intel_update_interval_hours: 6
+  alert_threshold_critical: 0.9
+  backup_retention_days: 30
+  version: "1.0.0"

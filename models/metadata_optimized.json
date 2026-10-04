@@ -1,0 +1,67 @@
+{
+  "version": "optimized_realtime_v1",
+  "timestamp": "2026-08-02T18:00:22",
+  "feature_names": [
+    "packet_rate",
+    "byte_rate",
+    "flow_duration",
+    "dst_port",
+    "syn_flag_count",
+    "ack_flag_count",
+    "rst_flag_count",
+    "connection_errors",
+    "fwd_packets_per_second",
+    "bwd_packets_per_second",
+    "packet_length_mean",
+    "fwd_packet_length_mean",
+    "bwd_packet_length_mean",
+    "total_fwd_packets",
+    "total_bwd_packets",
+    "fwd_bytes",
+    "bwd_bytes"
+  ],
+  "test_metrics": {
+    "confusion_matrix": [
+      [
+        109778,
+        1751
+      ],
+      [
+        1899,
+        452721
+      ]
+    ],
+    "tn": 109778,
+    "fp": 1751,
+    "fn": 1899,
+    "tp": 452721,
+    "accuracy": 0.9935529339449509,
+    "precision": 0.9961471773838653,
+    "recall": 0.9958228850468523,
+    "specificity": 0.9843000475212725,
+    "f1": 0.9959850048179942
+  },
+  "label_classes": [
+    "ATTACK",
+    "BENIGN"
+  ],
+  "lgb_params": {
+    "n_estimators": 50,
+    "learning_rate": 0.1,
+    "max_depth": 6,
+    "num_leaves": 31,
+    "n_jobs": -1
+  },
+  "if_params": {
+    "n_estimators": 100,
+    "max_samples": 1024,
+    "contamination": 0.05
+  },
+  "optimization_notes": [
+    "Optimized LightGBM for real-time inference",
+    "Saved the supervised artifact under the active LightGBM path and a compatibility alias",
+    "Reduced Isolation Forest ensemble size for quicker scoring",
+    "Enabled parallel processing (n_jobs=-1)",
+    "Optimized for real-time IoT traffic analysis"
+  ]
+}

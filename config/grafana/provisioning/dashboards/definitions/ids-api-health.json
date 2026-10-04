@@ -1,0 +1,62 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {"type": "grafana", "uid": "-- Grafana --"},
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"showTime": true, "sortOrder": "Descending"},
+      "targets": [
+        {"expr": "{job=\"ids_system\", source_agent=~\"api|orchestrator|logging_agent\"}", "refId": "A"}
+      ],
+      "title": "Backend and API Activity",
+      "type": "logs"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 2,
+      "targets": [
+        {"expr": "sum by (level) (count_over_time({job=\"ids_system\", source_agent=~\"api|orchestrator|logging_agent\"}[5m]))", "legendFormat": "{{level}}", "refId": "A"}
+      ],
+      "title": "API/Backend Log Levels",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "id": 3,
+      "targets": [
+        {"expr": "sum by (source_agent) (count_over_time({job=\"ids_system\", source_agent=~\"api|orchestrator|logging_agent\"}[15m]))", "legendFormat": "{{source_agent}}", "refId": "A"}
+      ],
+      "title": "API/Backend Activity by Agent",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["ids", "loki", "api", "backend"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "IDS API Health",
+  "uid": "ids-api-health",
+  "version": 1
+}

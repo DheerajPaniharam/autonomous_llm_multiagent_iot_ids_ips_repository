@@ -1,0 +1,171 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: ids-alerts
+    folder: IDS Alerts
+    interval: 1m
+    rules:
+      - uid: high-error-rate
+        title: High Error Rate
+        condition: C
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: 'sum by (level) (count_over_time({job="ids_system", level=~"ERROR|CRITICAL"}[15m]))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: -100
+            model:
+              type: math
+              expression: '$A > 3'
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: -100
+            model:
+              type: math
+              expression: '$B'
+          # Additional metrics for email enrichment
+          - refId: D
+            queryType: ''
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: 'topk(5, sum by (src_ip) (count_over_time({job="ids_system"} |= "threat_score" [15m])))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: E
+            queryType: ''
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: 'topk(5, sum by (protocol) (count_over_time({job="ids_system"} |= "threat_score" [15m])))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 15m
+        annotations:
+          summary: High number of security-related errors detected
+          description: The IDS system is producing repeated ERROR or CRITICAL logs. This may indicate a system malfunction, resource exhaustion, or an active attack overwhelming the detection engine.
+          impact: System reliability compromised. Threat detection may be delayed or incomplete.
+          recommendation: Check system logs for root causes. Investigate recent traffic patterns. Verify resource availability (CPU, memory, disk).
+          affected_component: IDS Detection Engine
+          threat_level: System Health Issue
+          action_required: Immediate investigation required
+          metrics_to_check: "Top attacking IPs (last 15 min) | Attack protocols | Threat score distribution"
+          investigation_steps: "1. Check CPU/Memory usage\n2. Review error logs for patterns\n3. Verify network connectivity\n4. Check database performance"
+        labels:
+          severity: warning
+          team: security-ops
+          impact_area: system-health
+          
+      - uid: high-attack-rate
+        title: High Attack Detection Rate
+        condition: C
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: 'count(count_over_time({job="ids_system"} |= "threat_score" [5m])) by (job)'
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: -100
+            model:
+              type: math
+              expression: '$A > 50'
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: -100
+            model:
+              type: math
+              expression: '$B'
+          # Top attacking source IPs
+          - refId: D
+            queryType: ''
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: 'topk(10, sum by (src_ip) (count_over_time({job="ids_system"} |= "threat_score" [10m])))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+          # Top attack protocols
+          - refId: E
+            queryType: ''
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: 'topk(5, sum by (protocol) (count_over_time({job="ids_system"} |= "threat_score" [10m])))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+          # High threat score detections
+          - refId: F
+            queryType: ''
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: 'count(count_over_time({job="ids_system"} |= "threat_score" >= "0.75" [10m]))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+          # Average threat score
+          - refId: G
+            queryType: ''
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: 'avg by (job) (label_replace({job="ids_system"} |= "threat_score", "threat", "threat_score", ""))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          summary: Elevated threat detection rate observed
+          description: The IDS is detecting a high volume of suspicious network activity or attacks. This could indicate an active attack campaign, reconnaissance activity, or misconfigured firewall rules triggering false positives.
+          impact: Potential active attack in progress. Network security under active threat.
+          recommendation: Review recent attacks in dashboard. Identify attack patterns and sources. Engage firewall team for mitigation rules. Consider enabling incident response procedures.
+          affected_component: Network Perimeter
+          threat_level: Active Threat
+          action_required: Escalate to incident response team
+          metrics_summary: "High-Risk Threats (score ≥0.75) detected in last 10 minutes"
+          attack_metrics: "Check dashboard for:\n• Top 10 attacking source IPs\n• Attack protocol distribution (TCP/UDP/ICMP)\n• Threat score heatmap\n• Attack timeline"
+          investigation_steps: "1. Identify top 3 attacker IPs\n2. Check geolocation & threat intel\n3. Review firewall rules for blocking\n4. Analyze attack patterns\n5. Correlate with other alerts"
+          response_actions: "IMMEDIATE: Enable rate limiting on top IPs | Block high-threat sources | Increase monitoring | ESCALATE to incident response if attack persists >15min"
+        labels:
+          severity: critical
+          team: security-ops
+          impact_area: active-threats
+          attack_type: multi-vector

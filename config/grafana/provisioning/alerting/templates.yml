@@ -1,0 +1,223 @@
+apiVersion: 1
+
+notificationTemplates:
+  - name: ids-email-template
+    template: |
+      {{ define "ids-email-template" }}
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 24px; }
+          .container { width: 100%; max-width: 1080px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }
+          .header { padding: 28px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+          .header h1 { margin: 0; font-size: 24px; }
+          .severity-badge { display: inline-block; padding: 6px 12px; border-radius: 4px; font-weight: bold; margin-top: 10px; }
+          .severity-critical { background-color: #dc3545; }
+          .severity-warning { background-color: #fd7e14; }
+          .severity-info { background-color: #17a2b8; }
+          .content { padding: 28px 32px; }
+          .alert-section { margin-bottom: 20px; border-left: 4px solid #667eea; padding-left: 15px; }
+          .alert-section h3 { margin: 0 0 10px 0; color: #333; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .alert-section p { margin: 5px 0; color: #555; line-height: 1.6; }
+          .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+          .metric-box { background-color: #f9f9f9; padding: 15px; border-radius: 4px; border-left: 3px solid #667eea; }
+          .metric-label { font-size: 12px; color: #999; text-transform: uppercase; margin-bottom: 5px; }
+          .metric-value { font-size: 20px; font-weight: bold; color: #333; }
+          .attack-metrics { background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 4px; padding: 15px; margin-bottom: 20px; }
+          .attack-metrics h3 { color: #856404; margin: 0 0 15px 0; }
+          .attack-metrics table { width: 100%; border-collapse: collapse; }
+          .attack-metrics th { background-color: #ffe69c; padding: 10px; text-align: left; font-weight: bold; font-size: 12px; color: #333; border-bottom: 2px solid #ffc107; }
+          .attack-metrics td { padding: 8px 10px; border-bottom: 1px solid #ffe69c; }
+          .attack-metrics tr:last-child td { border-bottom: none; }
+          .ip-label { background-color: #ff6b6b; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; }
+          .protocol-tcp { background-color: #e74c3c; color: white; }
+          .protocol-udp { background-color: #3498db; color: white; }
+          .protocol-icmp { background-color: #2ecc71; color: white; }
+          .threat-high { background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; }
+          .threat-medium { background-color: #fd7e14; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; }
+          .actions { background-color: #f0f7ff; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #0066cc; }
+          .actions h4 { margin: 0 0 10px 0; color: #0066cc; }
+          .action-item { margin: 8px 0; padding-left: 20px; position: relative; color: #555; }
+          .action-item:before { content: "→"; position: absolute; left: 0; color: #0066cc; font-weight: bold; }
+          .investigation-steps { background-color: #e8f4f8; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #17a2b8; }
+          .investigation-steps h4 { margin: 0 0 10px 0; color: #17a2b8; }
+          .step { margin: 8px 0; color: #555; }
+          .button { display: inline-block; padding: 10px 20px; background-color: #667eea; color: white; text-decoration: none; border-radius: 4px; margin-top: 10px; margin-right: 10px; }
+          .footer { background-color: #f5f5f5; padding: 18px 32px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #999; }
+          .timestamp { color: #999; font-size: 12px; margin-top: 10px; }
+          table { width: 100%; border-collapse: collapse; margin: 10px 0; table-layout: fixed; }
+          table th { background-color: #f0f0f0; padding: 10px; text-align: left; font-weight: bold; font-size: 12px; color: #333; }
+          table td { padding: 10px; border-bottom: 1px solid #e0e0e0; vertical-align: top; overflow-wrap: anywhere; word-break: normal; }
+          table th:first-child, table td:first-child { width: 34%; }
+          table th:last-child, table td:last-child { width: 66%; }
+          table tr:last-child td { border-bottom: none; }
+          .stat-badge { display: inline-block; background-color: #667eea; color: white; padding: 4px 8px; border-radius: 3px; margin-right: 8px; font-size: 12px; font-weight: bold; }
+          @media only screen and (max-width: 700px) {
+            body { padding: 8px; }
+            .header, .content { padding: 20px; }
+            .footer { padding: 16px 20px; }
+            .metrics-grid { grid-template-columns: 1fr; }
+            table { table-layout: auto; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <!-- Header -->
+          <div class="header">
+            <h1>🔒 IoT IDS/IPS Security Alert</h1>
+            <div class="severity-badge {{ if eq .GroupLabels.severity "critical" }}severity-critical{{ else if eq .GroupLabels.severity "warning" }}severity-warning{{ else }}severity-info{{ end }}">
+              {{ .GroupLabels.severity | toUpper }} SEVERITY
+            </div>
+          </div>
+
+          <!-- Main Content -->
+          <div class="content">
+            <!-- Alert Summary -->
+            <div class="alert-section">
+              <h3>📋 Alert Summary</h3>
+              {{ range .Alerts }}
+                <p><strong>{{ .Labels.alertname }}</strong></p>
+                <p>{{ .Annotations.description }}</p>
+              {{ end }}
+            </div>
+
+            <!-- Attack Metrics (if critical alert) -->
+            {{ if eq .GroupLabels.severity "critical" }}
+            <div class="attack-metrics">
+              <h3>⚠️ Attack Metrics & Intelligence</h3>
+              
+              <div style="margin-bottom: 15px;">
+                <p><strong>Key Findings:</strong></p>
+                {{ range .Alerts }}
+                  {{ if .Annotations.metrics_summary }}
+                    <p>{{ .Annotations.metrics_summary }}</p>
+                  {{ end }}
+                  {{ if .Annotations.attack_metrics }}
+                    <div style="background-color: white; padding: 10px; border-radius: 3px; margin-top: 10px; white-space: pre-wrap; font-family: monospace; font-size: 12px;">{{ .Annotations.attack_metrics }}</div>
+                  {{ end }}
+                {{ end }}
+              </div>
+
+              <table>
+                <tr>
+                  <th>Metric Type</th>
+                  <th>Details</th>
+                  <th>Risk Level</th>
+                </tr>
+                <tr>
+                  <td><span class="ip-label">TOP IPs</span></td>
+                  <td>Check Grafana for top 10 attacking source IPs in last 10 minutes</td>
+                  <td><span class="threat-high">HIGH</span></td>
+                </tr>
+                <tr>
+                  <td><span class="protocol-tcp">TCP</span> <span class="protocol-udp">UDP</span> <span class="protocol-icmp">ICMP</span></td>
+                  <td>Review protocol distribution in attack dashboard</td>
+                  <td><span class="threat-high">HIGH</span></td>
+                </tr>
+                <tr>
+                  <td><span class="threat-high">THREAT</span></td>
+                  <td>High-risk threats (score ≥0.75) detected</td>
+                  <td><span class="threat-high">CRITICAL</span></td>
+                </tr>
+              </table>
+            </div>
+            {{ end }}
+
+            <!-- Key Information -->
+            <div class="alert-section">
+              <h3>🎯 Threat Details</h3>
+              <table>
+                <tr>
+                  <th>Attribute</th>
+                  <th>Value</th>
+                </tr>
+                {{ range .GroupLabels.SortedPairs }}
+                  <tr>
+                    <td><strong>{{ .Name }}</strong></td>
+                    <td>{{ .Value }}</td>
+                  </tr>
+                {{ end }}
+              </table>
+            </div>
+
+            <!-- Impact Assessment -->
+            <div class="alert-section">
+              <h3>📊 Impact Assessment</h3>
+              {{ range .Alerts }}
+                {{ if .Annotations.impact }}
+                  <p><strong>Impact:</strong> {{ .Annotations.impact }}</p>
+                {{ end }}
+                {{ if .Annotations.affected_component }}
+                  <p><strong>Affected Component:</strong> {{ .Annotations.affected_component }}</p>
+                {{ end }}
+                {{ if .Annotations.threat_level }}
+                  <p><strong>Threat Classification:</strong> {{ .Annotations.threat_level }}</p>
+                {{ end }}
+              {{ end }}
+            </div>
+
+            <!-- Investigation Steps -->
+            <div class="investigation-steps">
+              <h4>🔍 Investigation Steps</h4>
+              {{ range .Alerts }}
+                {{ if .Annotations.investigation_steps }}
+                  <div style="white-space: pre-wrap; line-height: 1.8;">{{ .Annotations.investigation_steps }}</div>
+                {{ end }}
+              {{ end }}
+            </div>
+
+            <!-- Recommended Actions -->
+            <div class="actions">
+              <h4>⚡ Response Actions</h4>
+              {{ range .Alerts }}
+                {{ if .Annotations.response_actions }}
+                  <div style="white-space: pre-wrap; line-height: 1.8;">{{ .Annotations.response_actions }}</div>
+                {{ else }}
+                  <div class="action-item">Review the affected system in Grafana dashboard</div>
+                  <div class="action-item">Check firewall mitigation rules and blocking status</div>
+                  <div class="action-item">Investigate attack source IPs in network logs</div>
+                  <div class="action-item">Escalate to security team if threat is persistent</div>
+                {{ end }}
+              {{ end }}
+              <br/>
+              <a href="http://localhost:3000/d/ids-incident-summary" class="button">📊 View Attack Dashboard</a>
+              <a href="http://localhost:3000/d/ids-attack-activity" class="button">📈 View Attack Trends</a>
+            </div>
+
+            <!-- Alert Details -->
+            <div class="alert-section">
+              <h3>📌 Timeline & Status</h3>
+              {{ range .Alerts }}
+                <p><strong>Status:</strong> 
+                  {{ if eq .Status "firing" }}
+                    <span style="color: #dc3545; font-weight: bold;">🔴 ACTIVE/FIRING</span>
+                  {{ else }}
+                    <span style="color: #28a745; font-weight: bold;">✅ RESOLVED</span>
+                  {{ end }}
+                </p>
+                <p><strong>Started:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}</p>
+                {{ if ne .EndsAt.Format "0001-01-01" }}
+                  <p><strong>Resolved:</strong> {{ .EndsAt.Format "2006-01-02 15:04:05 MST" }}</p>
+                {{ end }}
+              {{ end }}
+            </div>
+
+            <!-- Timestamp -->
+            <div class="timestamp">
+              Alert generated: {{ .Now.Format "2006-01-02 15:04:05 MST" }}
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="footer">
+            <p><strong>🛡️ IoT IDS/IPS System</strong> — Autonomous Multi-Agent Threat Detection & Response</p>
+            <p>This is an automated alert from your security monitoring system. Do not reply to this email.</p>
+            <p>📞 For security incidents, contact your incident response team immediately. For support, contact your security operations center.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+      {{ end }}

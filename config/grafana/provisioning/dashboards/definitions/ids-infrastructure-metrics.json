@@ -1,0 +1,164 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {"type": "grafana", "uid": "-- Grafana --"},
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [
+        {
+          "expr": "avg(avg_over_time({job=\"ids_system\", event_type=\"infra_metrics\"} | json | unwrap cpu_percent [5m]))",
+          "legendFormat": "CPU Usage (%)",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Utilization History",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "targets": [
+        {
+          "expr": "avg(avg_over_time({job=\"ids_system\", event_type=\"infra_metrics\"} | json | unwrap memory_percent [5m]))",
+          "legendFormat": "Memory Usage (%)",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory Utilization History",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+      "id": 3,
+      "targets": [
+        {
+          "expr": "avg(last_over_time({job=\"ids_system\", event_type=\"infra_metrics\"} | json | unwrap cpu_percent [5m]))",
+          "legendFormat": "Current CPU",
+          "refId": "A"
+        }
+      ],
+      "title": "Current CPU Usage",
+      "type": "stat",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 70},
+              {"color": "red", "value": 90}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+      "id": 4,
+      "targets": [
+        {
+          "expr": "avg(last_over_time({job=\"ids_system\", event_type=\"infra_metrics\"} | json | unwrap memory_percent [5m]))",
+          "legendFormat": "Current Memory",
+          "refId": "A"
+        }
+      ],
+      "title": "Current Memory Usage",
+      "type": "stat",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 75},
+              {"color": "red", "value": 90}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+      "id": 5,
+      "targets": [
+        {
+          "expr": "avg(last_over_time({job=\"ids_system\", event_type=\"infra_metrics\"} | json | unwrap disk_percent [5m]))",
+          "legendFormat": "Current Disk",
+          "refId": "A"
+        }
+      ],
+      "title": "Disk Space Usage",
+      "type": "stat",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 80},
+              {"color": "red", "value": 95}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "id": 6,
+      "targets": [
+        {
+          "expr": "avg(rate({job=\"ids_system\", event_type=\"infra_metrics\"} | json | unwrap network_bytes_recv [5m]))",
+          "legendFormat": "Received (Rx)",
+          "refId": "A"
+        },
+        {
+          "expr": "avg(rate({job=\"ids_system\", event_type=\"infra_metrics\"} | json | unwrap network_bytes_sent [5m]))",
+          "legendFormat": "Sent (Tx)",
+          "refId": "B"
+        }
+      ],
+      "title": "Network Bandwidth Throughput",
+      "type": "timeseries",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps"
+        }
+      }
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["ids", "loki", "infrastructure", "system"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timezone": "browser",
+  "title": "IDS Infrastructure Metrics",
+  "uid": "ids-infrastructure-metrics",
+  "version": 1
+}

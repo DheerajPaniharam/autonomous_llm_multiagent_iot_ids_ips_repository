@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cyber-dark: #0a0e17;
+  --color-cyber-darker: #05070a;
+  --color-cyber-card: #131a28;
+  --color-cyber-card-hover: #1a2333;
+  --color-cyber-blue: #00f0ff;
+  --color-cyber-blue-dark: #008f99;
+  --color-cyber-purple: #8a2be2;
+  --color-cyber-neon: #39ff14;
+  --color-cyber-warning: #ffb000;
+  --color-cyber-danger: #ff003c;
+  --color-cyber-text: #e2e8f0;
+  --color-cyber-muted: #94a3b8;
+  --color-cyber-border: #1e293b;
+  --color-cyber-border-focus: #3b82f6;
+  
+  --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--color-cyber-dark)] text-[var(--color-cyber-text)] font-sans antialiased;
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(0, 240, 255, 0.04), transparent 30%),
+      radial-gradient(circle at 90% 80%, rgba(138, 43, 226, 0.04), transparent 30%);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-[var(--color-cyber-darker)];
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-[var(--color-cyber-border)] rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-[var(--color-cyber-muted)];
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-[var(--color-cyber-card)]/75 backdrop-blur-lg border border-[var(--color-cyber-border)]/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)];
+  }
+  
+  .glass-panel-interactive {
+    @apply bg-[var(--color-cyber-card)]/75 backdrop-blur-lg border border-[var(--color-cyber-border)]/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 hover:bg-[var(--color-cyber-card-hover)]/90 hover:border-[var(--color-cyber-blue)]/40 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(0,240,255,0.08)];
+  }
+
+  .cyber-button {
+    @apply inline-flex items-center justify-center px-4 py-2 bg-[var(--color-cyber-card)] border border-[var(--color-cyber-border)]/60 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-[var(--color-cyber-card-hover)] hover:border-[var(--color-cyber-muted)]/30;
+  }
+
+  .cyber-button-primary {
+    @apply bg-[var(--color-cyber-blue)]/8 border-[var(--color-cyber-blue)]/50 text-[var(--color-cyber-blue)] hover:bg-[var(--color-cyber-blue)]/15 hover:border-[var(--color-cyber-blue)] hover:shadow-[0_0_15px_rgba(0,240,255,0.25)];
+  }
+
+  .cyber-button-danger {
+    @apply bg-[var(--color-cyber-danger)]/8 border-[var(--color-cyber-danger)]/50 text-[var(--color-cyber-danger)] hover:bg-[var(--color-cyber-danger)]/15 hover:border-[var(--color-cyber-danger)] hover:shadow-[0_0_15px_rgba(255,0,60,0.25)];
+  }
+
+  .cyber-input {
+    @apply w-full px-4 py-2 bg-[var(--color-cyber-darker)]/80 border border-[var(--color-cyber-border)]/60 rounded-lg text-[var(--color-cyber-text)] placeholder-[var(--color-cyber-muted)]/60 focus:outline-none focus:border-[var(--color-cyber-blue)]/80 focus:ring-1 focus:ring-[var(--color-cyber-blue)]/80 transition-all duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border;
+  }
+  
+  .badge-success {
+    @apply bg-[var(--color-cyber-neon)]/10 text-[var(--color-cyber-neon)] border-[var(--color-cyber-neon)]/30;
+  }
+  
+  .badge-warning {
+    @apply bg-[var(--color-cyber-warning)]/10 text-[var(--color-cyber-warning)] border-[var(--color-cyber-warning)]/30;
+  }
+  
+  .badge-danger {
+    @apply bg-[var(--color-cyber-danger)]/10 text-[var(--color-cyber-danger)] border-[var(--color-cyber-danger)]/30;
+  }
+  
+  .badge-info {
+    @apply bg-[var(--color-cyber-blue)]/10 text-[var(--color-cyber-blue)] border-[var(--color-cyber-blue)]/30;
+  }
+
+  /* Recharts Customizations */
+  .recharts-cartesian-grid-horizontal line,
+  .recharts-cartesian-grid-vertical line {
+    stroke: var(--color-cyber-border) !important;
+  }
+  .recharts-text {
+    fill: var(--color-cyber-muted) !important;
+  }
+  .recharts-tooltip-wrapper .recharts-default-tooltip {
+    background-color: rgba(19, 26, 40, 0.9) !important;
+    border: 1px solid var(--color-cyber-border) !important;
+    border-radius: 0.5rem !important;
+    backdrop-filter: blur(8px) !important;
+  }
+}
