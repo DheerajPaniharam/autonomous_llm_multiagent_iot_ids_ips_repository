@@ -29,23 +29,48 @@ router = APIRouter()
 # Configuration
 # ---------------------------------------------------------------------------
 
-# JWT settings from environment variables
+# JWT settings from environment variables.
+# Keep module import safe in local/dev setups while still respecting explicit
+# deployment configuration. We allow a dev fallback only when no secret is set.
+_DEFAULT_DEV_JWT_SECRET = "dev-local-jwt-secret-change-me"
 JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "")
-if not JWT_SECRET_KEY:
-    raise RuntimeError("JWT_SECRET_KEY environment variable must be set")
 
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", "60"))
+
+
+def get_jwt_secret() -> str:
+    """Resolve the active JWT secret with correct precedence for tests and runtime config."""
+    module_secret = globals().get("JWT_SECRET_KEY", "")
+    if module_secret and module_secret != _DEFAULT_DEV_JWT_SECRET:
+        os.environ.setdefault("JWT_SECRET_KEY", module_secret)
+        return module_secret
+
+    env_secret = os.environ.get("JWT_SECRET_KEY")
+    if env_secret and env_secret != _DEFAULT_DEV_JWT_SECRET:
+        globals()["JWT_SECRET_KEY"] = env_secret
+        return env_secret
+
+    if env_secret == _DEFAULT_DEV_JWT_SECRET:
+        globals()["JWT_SECRET_KEY"] = _DEFAULT_DEV_JWT_SECRET
+        return _DEFAULT_DEV_JWT_SECRET
+
+    globals()["JWT_SECRET_KEY"] = _DEFAULT_DEV_JWT_SECRET
+    os.environ.setdefault("JWT_SECRET_KEY", _DEFAULT_DEV_JWT_SECRET)
+    logger.warning(
+        "JWT_SECRET_KEY is not configured; using a local development fallback. "
+        "Set JWT_SECRET_KEY in the environment or .env for production use."
+    )
+    return _DEFAULT_DEV_JWT_SECRET
 
 # OAuth2 scheme for token extraction
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 http_bearer = HTTPBearer(auto_error=False)
 
-# Warm up JWT encoder to avoid first-call overhead during tests
+# Warm up JWT encoder to avoid first-call overhead during tests. This uses the
+# same resolver as runtime code so explicit env config remains authoritative.
 try:
-    if JWT_SECRET_KEY:
-        # Perform a lightweight encode to initialize crypto backends/caches
-        jwt.encode({"sub": "__warmup__", "role": "viewer", "exp": 0, "iat": 0}, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    jwt.encode({"sub": "__warmup__", "role": "viewer", "exp": 0, "iat": 0}, get_jwt_secret(), algorithm=JWT_ALGORITHM)
 except Exception:
     # Swallow any errors; warm-up is a best-effort optimization
     pass
@@ -86,6 +111,7 @@ class AuthService:
         Returns:
             Encoded JWT token string
         """
+        secret = get_jwt_secret()
         if expires_delta is None:
             expires_delta = timedelta(minutes=JWT_EXPIRE_MINUTES)
         
@@ -98,7 +124,7 @@ class AuthService:
             "iat": datetime.now(timezone.utc),
         }
         
-        encoded_jwt = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+        encoded_jwt = jwt.encode(payload, secret, algorithm=JWT_ALGORITHM)
         return encoded_jwt
 
     @staticmethod
@@ -116,7 +142,8 @@ class AuthService:
             HTTPException: If token is invalid or expired
         """
         try:
-            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            secret = get_jwt_secret()
+            payload = jwt.decode(token, secret, algorithms=[JWT_ALGORITHM])
             username: str = payload.get("sub")
             role: str = payload.get("role")
             
