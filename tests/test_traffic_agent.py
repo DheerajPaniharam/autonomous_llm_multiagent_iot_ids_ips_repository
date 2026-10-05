@@ -34,6 +34,28 @@ def test_resolve_log_path_expands_zeek_log_directory(tmp_path: Path) -> None:
     assert resolved == str(conn_log)
 
 
+def test_traffic_agent_accepts_multiple_capture_log_paths(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "SURICATA_LOG_PATHS",
+        "/capture/suricata/eth0/eve.json, /capture/suricata/wlan0/eve.json",
+    )
+    monkeypatch.setenv(
+        "ZEEK_LOG_PATHS",
+        "/capture/zeek/eth0/conn.log, /capture/zeek/wlan0/conn.log",
+    )
+
+    agent = TrafficAgent()
+
+    assert agent._suricata_logs == [
+        "/capture/suricata/eth0/eve.json",
+        "/capture/suricata/wlan0/eve.json",
+    ]
+    assert agent._zeek_logs == [
+        "/capture/zeek/eth0/conn.log",
+        "/capture/zeek/wlan0/conn.log",
+    ]
+
+
 def test_publish_adds_flow_to_recent_history(monkeypatch) -> None:
     agent = TrafficAgent()
 

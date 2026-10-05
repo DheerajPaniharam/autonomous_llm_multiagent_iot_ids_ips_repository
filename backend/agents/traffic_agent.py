@@ -71,6 +71,10 @@ def _resolve_default_zeek_log() -> str:
     return resolve_log_path(_ZEEK_CONN_LOG, ["/tmp/zeek-logs/conn.log"])
 
 
+def _split_log_paths(value: str) -> list[str]:
+    return [path.strip() for path in value.split(",") if path.strip()]
+
+
 class TrafficAgent:
     """
     Captures network flow metadata from Suricata and Zeek log files,
@@ -79,14 +83,33 @@ class TrafficAgent:
 
     def __init__(
         self,
-        suricata_log: str = _SURICATA_LOG,
+        suricata_log: str | None = None,
         zeek_log: str | None = None,
     ) -> None:
-        self._suricata_log = suricata_log
-        self._zeek_log = resolve_log_path(
-            zeek_log or _resolve_default_zeek_log(),
-            ["/tmp/zeek-logs/conn.log"],
+        suricata_paths = (
+            _split_log_paths(os.environ["SURICATA_LOG_PATHS"])
+            if suricata_log is None and os.environ.get("SURICATA_LOG_PATHS")
+            else [suricata_log or _SURICATA_LOG]
         )
+        if zeek_log is None and os.environ.get("ZEEK_LOG_PATHS"):
+            zeek_paths = _split_log_paths(os.environ["ZEEK_LOG_PATHS"])
+        else:
+            zeek_paths = [
+                resolve_log_path(
+                    zeek_log or _resolve_default_zeek_log(),
+                    ["/tmp/zeek-logs/conn.log"],
+                )
+            ]
+
+        if not suricata_paths:
+            raise ValueError("SURICATA_LOG_PATHS must contain at least one log path")
+        if not zeek_paths:
+            raise ValueError("ZEEK_LOG_PATHS must contain at least one log path")
+
+        self._suricata_logs = suricata_paths
+        self._zeek_logs = zeek_paths
+        self._suricata_log = suricata_paths[0]
+        self._zeek_log = zeek_paths[0]
         self._stop_event = asyncio.Event()
         self._tasks: list[asyncio.Task] = []
         self._vectors_published = 0
@@ -99,13 +122,22 @@ class TrafficAgent:
 
     async def start(self) -> None:
         """Start watching both log files concurrently."""
-        logger.info("TrafficAgent starting — watching %s and %s",
-                    self._suricata_log, self._zeek_log)
+        logger.info(
+            "TrafficAgent starting — watching %d Suricata log(s) and %d Zeek log(s)",
+            len(self._suricata_logs),
+            len(self._zeek_logs),
+        )
         self._stop_event.clear()
         self._flow_broadcast_buffer = []
         self._tasks = [
-            asyncio.create_task(self._watch_suricata_log(self._suricata_log)),
-            asyncio.create_task(self._watch_zeek_log(self._zeek_log)),
+            *(
+                asyncio.create_task(self._watch_suricata_log(path))
+                for path in self._suricata_logs
+            ),
+            *(
+                asyncio.create_task(self._watch_zeek_log(path))
+                for path in self._zeek_logs
+            ),
             asyncio.create_task(self._broadcast_loop()),
         ]
 

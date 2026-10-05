@@ -14,6 +14,7 @@ An enterprise-grade, autonomous Intrusion Detection and Prevention System (IDS/I
 ## Table of Contents
 
 - [Architecture Overview](#architecture-overview)
+- [System and Technology Guide](./SYSTEM_TECHNOLOGY_GUIDE.md)
 - [Key Capabilities & Innovations](#key-capabilities--innovations)
 - [Autonomous Agents](#autonomous-agents)
 - [Machine Learning Subsystem](#machine-learning-subsystem)
@@ -168,6 +169,40 @@ docker compose up -d
 ```
 
 *This launches 7 services:* PostgreSQL (`5433:5432`), FastAPI Backend (`8000:8000`), React Dashboard (`5173:80`), Loki (`3100:3100`), Promtail, Grafana (`3000:3000`), and Ollama (`11435:11434`).
+
+### Capturing Ethernet and Wi-Fi Traffic
+
+The Suricata and Zeek runners can capture one or more host interfaces. Pass the
+actual interface names on the host where the tools run:
+
+```bash
+sudo bash traffic_capture/suricata_runner.sh eth0 wlan0
+sudo bash traffic_capture/zeek_runner.sh eth0 wlan0
+```
+
+Alternatively, pass `SURICATA_INTERFACES="eth0 wlan0"` or
+`ZEEK_INTERFACES="eth0 wlan0"` through the process environment. The runner
+scripts do not load `.env` themselves; when using `sudo`, pass environment
+variables through `sudo env`. With more than one interface, logs are
+written under per-interface directories, for example
+`logs/suricata/eth0/eve.json` and `logs/zeek/current/wlan0/conn.log`. Configure
+the backend's `.env` with comma-separated paths for all selected interfaces:
+
+```dotenv
+SURICATA_LOG_PATHS=/app/logs/suricata/eth0/eve.json,/app/logs/suricata/wlan0/eve.json
+ZEEK_LOG_PATHS=/app/logs/zeek/current/eth0/conn.log,/app/logs/zeek/current/wlan0/conn.log
+```
+
+Those `/app/logs` paths apply to Docker Compose, which mounts the repository's
+`logs` directory there. For a local backend, use the corresponding paths on the
+host. Replace `eth0` and `wlan0` with the actual interface names. The machine
+running the capture tools must expose each interface and grant capture
+permissions; Wi-Fi client traffic not directed to this machine may require a
+monitor-mode adapter or gateway/mirror visibility.
+
+Check interface names with `ip -br link`; the Wi-Fi adapter must be exposed to
+the host where capture runs. Capturing other Wi-Fi clients' traffic may require
+a monitor-mode-capable adapter or gateway/mirror visibility.
 
 ### 3. Verify System Health
 

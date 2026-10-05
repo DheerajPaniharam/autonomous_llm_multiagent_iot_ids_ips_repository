@@ -2,15 +2,14 @@
 # =============================================================================
 # traffic_capture/suricata_runner.sh
 #
-# Start Suricata in IDS mode on the specified network interface.
-# Suricata writes alerts and flow records to /var/log/suricata/eve.json,
-# which the TrafficAgent tails in real time.
+# Start Suricata in IDS mode on one or more network interfaces. Each interface
+# gets a separate log directory when capturing on multiple interfaces.
 #
 # Usage:
-#   sudo bash traffic_capture/suricata_runner.sh [INTERFACE]
+#   sudo bash traffic_capture/suricata_runner.sh [INTERFACE ...]
 #
 # Arguments:
-#   INTERFACE   Network interface to monitor (default: eth0)
+#   INTERFACE   One or more network interfaces (default: eth0)
 #
 # Requirements:
 #   - Suricata >= 6.0 installed (apt install suricata / yum install suricata)
@@ -18,7 +17,8 @@
 #   - config/suricata.yaml present
 #
 # Environment variables:
-#   SURICATA_INTERFACE   Override the network interface
+#   SURICATA_INTERFACES  Space-separated interfaces (e.g. "eth0 wlan0")
+#   SURICATA_INTERFACE   Legacy single-interface override
 #   SURICATA_CONFIG      Path to suricata.yaml (default: config/suricata.yaml)
 #   SURICATA_LOG_DIR     Directory for eve.json output (default: logs/suricata)
 # =============================================================================
@@ -31,13 +31,22 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-INTERFACE="${1:-${SURICATA_INTERFACE:-eth0}}"
+if (($#)); then
+    INTERFACES=("$@")
+else
+    read -r -a INTERFACES <<< "${SURICATA_INTERFACES:-${SURICATA_INTERFACE:-eth0}}"
+fi
 CONFIG="${SURICATA_CONFIG:-$PROJECT_ROOT/config/suricata.yaml}"
-LOG_DIR="${SURICATA_LOG_DIR:-$PROJECT_ROOT/logs/suricata}"
+BASE_LOG_DIR="${SURICATA_LOG_DIR:-$PROJECT_ROOT/logs/suricata}"
 
-echo "[suricata_runner.sh] Interface : $INTERFACE"
-echo "[suricata_runner.sh] Config    : $CONFIG"
-echo "[suricata_runner.sh] Log dir   : $LOG_DIR"
+if ((${#INTERFACES[@]} == 0)); then
+    echo "ERROR: at least one network interface must be specified." >&2
+    exit 1
+fi
+
+echo "[suricata_runner.sh] Interfaces: ${INTERFACES[*]}"
+echo "[suricata_runner.sh] Config     : $CONFIG"
+echo "[suricata_runner.sh] Base log dir: $BASE_LOG_DIR"
 
 # ---------------------------------------------------------------------------
 # Pre-flight checks
@@ -54,25 +63,35 @@ if [[ ! -f "$CONFIG" ]]; then
     exit 1
 fi
 
-if ! ip link show "$INTERFACE" &>/dev/null; then
-    echo "ERROR: Network interface '$INTERFACE' not found."
-    echo "Available interfaces:"
-    ip link show | grep -oP '^\d+: \K[^:@]+'
-    exit 1
-fi
-
-# Create log directory if it doesn't exist
-mkdir -p "$LOG_DIR"
-PID_FILE="${SURICATA_PIDFILE:-$LOG_DIR/suricata.pid}"
-mkdir -p "$(dirname "$PID_FILE")"
-
-if [[ -f "$PID_FILE" ]]; then
-    EXISTING_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
-    if [[ -n "$EXISTING_PID" ]] && kill -0 "$EXISTING_PID" 2>/dev/null; then
-        echo "[suricata_runner.sh] Existing Suricata process detected at PID $EXISTING_PID. Removing stale pidfile."
+RUN_DIRS=()
+for interface in "${INTERFACES[@]}"; do
+    if ! ip link show "$interface" &>/dev/null; then
+        echo "ERROR: Network interface '$interface' not found." >&2
+        echo "Available interfaces:"
+        ip link show | grep -oP '^\d+: \K[^:@]+'
+        exit 1
     fi
-    rm -f "$PID_FILE"
-fi
+    run_dir="$BASE_LOG_DIR"
+    if ((${#INTERFACES[@]} > 1)); then
+        run_dir="$BASE_LOG_DIR/$interface"
+    fi
+    RUN_DIRS+=("$run_dir")
+    mkdir -p "$run_dir"
+
+    pid_file="${SURICATA_PIDFILE:-$run_dir/suricata.pid}"
+    if ((${#INTERFACES[@]} > 1)) && [[ -n "${SURICATA_PIDFILE:-}" ]]; then
+        pid_file="${SURICATA_PIDFILE}.${interface}"
+    fi
+    mkdir -p "$(dirname "$pid_file")"
+    if [[ -f "$pid_file" ]]; then
+        existing_pid="$(cat "$pid_file" 2>/dev/null || true)"
+        if [[ -n "$existing_pid" ]] && kill -0 "$existing_pid" 2>/dev/null; then
+            echo "ERROR: Suricata is already running with PID $existing_pid (pidfile: $pid_file)." >&2
+            exit 1
+        fi
+        rm -f "$pid_file"
+    fi
+done
 
 # ---------------------------------------------------------------------------
 # Update Suricata rules (optional — skip if offline)
@@ -83,13 +102,34 @@ suricata-update --no-reload 2>/dev/null || echo "[suricata_runner.sh] Rule updat
 # ---------------------------------------------------------------------------
 # Start Suricata
 # ---------------------------------------------------------------------------
-echo "[suricata_runner.sh] Starting Suricata on $INTERFACE..."
-echo "[suricata_runner.sh] eve.json will be written to $LOG_DIR/eve.json"
-echo "[suricata_runner.sh] Press Ctrl+C to stop."
+PIDS=()
+cleanup() {
+    for pid in "${PIDS[@]}"; do
+        kill "$pid" 2>/dev/null || true
+    done
+    for pid in "${PIDS[@]}"; do
+        wait "$pid" 2>/dev/null || true
+    done
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-exec suricata \
-    -c "$CONFIG" \
-    -i "$INTERFACE" \
-    --pidfile "$PID_FILE" \
-    -l "$LOG_DIR" \
-    -v
+for index in "${!INTERFACES[@]}"; do
+    interface="${INTERFACES[$index]}"
+    log_dir="${RUN_DIRS[$index]}"
+    pid_file="${SURICATA_PIDFILE:-$log_dir/suricata.pid}"
+    if ((${#INTERFACES[@]} > 1)) && [[ -n "${SURICATA_PIDFILE:-}" ]]; then
+        pid_file="${SURICATA_PIDFILE}.${interface}"
+    fi
+    echo "[suricata_runner.sh] Starting Suricata on $interface; eve.json: $log_dir/eve.json"
+    suricata \
+        -c "$CONFIG" \
+        -i "$interface" \
+        --pidfile "$pid_file" \
+        -l "$log_dir" \
+        -v &
+    PIDS+=("$!")
+done
+echo "[suricata_runner.sh] Capturing all interfaces. Press Ctrl+C to stop."
+wait -n "${PIDS[@]}"
