@@ -14,6 +14,7 @@ An enterprise-grade, autonomous Intrusion Detection and Prevention System (IDS/I
 ## Table of Contents
 
 - [Architecture Overview](#architecture-overview)
+- [System and Technology Guide](./SYSTEM_TECHNOLOGY_GUIDE.md)
 - [Key Capabilities & Innovations](#key-capabilities--innovations)
 - [Autonomous Agents](#autonomous-agents)
 - [Machine Learning Subsystem](#machine-learning-subsystem)
